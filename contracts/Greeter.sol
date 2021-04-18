@@ -1,5 +1,6 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.7.0;
+pragma experimental ABIEncoderV2;
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
@@ -32,7 +33,10 @@ contract Gloxis is ERC721 {
     constructor() public ERC721("Gloxis", "GXS") {}
 
     modifier onlyOwnerOf(uint256 _characterId) {
-        require(msg.sender == characterToOwner[_characterId]);
+        require(
+            msg.sender == characterToOwner[_characterId],
+            "Only the owner can call this function"
+        );
         _;
     }
 
@@ -61,7 +65,7 @@ contract Gloxis is ERC721 {
                 uint32(block.timestamp + cooldownTime)
             )
         );
-        console.log("id:", newId);
+        characterToOwner[newId] = msg.sender;
         _safeMint(msg.sender, newId);
     }
 
@@ -72,6 +76,10 @@ contract Gloxis is ERC721 {
     {
         uint256 rand = uint256(keccak256(abi.encodePacked(_str)));
         return rand % dnaModulus;
+    }
+
+    function getCharactersCount() public view returns (uint256 count) {
+        return characters.length;
     }
 
     function setTokenURI(uint256 tokenId, string memory _tokenURI) public {
@@ -90,6 +98,7 @@ contract Gloxis is ERC721 {
         external
         onlyOwnerOf(_characterId)
     {
+        require(_characterId != _targetId, "You cannot attack yourself");
         Character storage myCharacter = characters[_characterId];
         Character storage targetCharacter = characters[_targetId];
         console.log("win count:", myCharacter.winCount);
