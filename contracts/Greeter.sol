@@ -1,6 +1,5 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.7.0;
-pragma experimental ABIEncoderV2;
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
@@ -62,7 +61,7 @@ contract Gloxis is ERC721 {
                 0,
                 25,
                 1,
-                uint32(block.timestamp + cooldownTime)
+                uint32(block.timestamp)
             )
         );
         characterToOwner[newId] = msg.sender;
@@ -94,17 +93,30 @@ contract Gloxis is ERC721 {
         _character.readyTime = uint32(block.timestamp + cooldownTime);
     }
 
-    function attack(uint256 _characterId, uint256 _targetId)
+    function _isReady(Character storage _character)
+        internal
+        view
+        returns (bool)
+    {
+        return (_character.readyTime <= block.timestamp);
+    }
+
+    function shareMana(uint256 _characterId, uint256 _targetId)
         external
         onlyOwnerOf(_characterId)
     {
-        require(_characterId != _targetId, "You cannot attack yourself");
         Character storage myCharacter = characters[_characterId];
+        require(
+            _isReady(myCharacter),
+            "You have to wait your 1 day to share your mana"
+        );
+        require(myCharacter.manaCount >= 1, "You don't have enough mana");
+        require(_characterId != _targetId, "You cannot attack yourself");
         Character storage targetCharacter = characters[_targetId];
-        console.log("win count:", myCharacter.winCount);
         myCharacter.winCount = myCharacter.winCount.add(1);
         myCharacter.level = myCharacter.level.add(1);
-        targetCharacter.manaCount = targetCharacter.manaCount.sub(1);
+        myCharacter.manaCount = myCharacter.manaCount.sub(1);
+        targetCharacter.manaCount = targetCharacter.manaCount.add(1);
         _triggerCooldown(myCharacter);
     }
 }
