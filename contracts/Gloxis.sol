@@ -1,35 +1,64 @@
 //SPDX-License-Identifier: Unlicense
-pragma solidity ^0.7.0;
+pragma solidity >=0.6.0;
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@chainlink/contracts/src/v0.6/VRFConsumerBase.sol";
 
-contract Gloxis is ERC721 {
+contract Gloxis is ERC721, VRFConsumerBase {
+    address internal vrfCoordinator;
+    bytes32 internal keyHash;
+    uint256 internal fee;
+
+    uint256 public randomResult;
+
     uint256 cooldownTime = 1 days;
     uint256 dnaDigits = 16;
     uint256 dnaModulus = 10**dnaDigits;
 
-    using SafeMath for uint16;
-    using SafeMath for uint32;
-    using SafeMath for uint256;
+    using SafeMathChainlink for uint16;
+    using SafeMathChainlink for uint32;
+    using SafeMathChainlink for uint256;
 
     struct Character {
-        uint256 strength;
         string name;
         uint256 eyeColor;
         uint256 hairColor;
         uint256 skinColor;
-        uint256 winCount;
-        uint256 manaCount;
-        uint256 level;
+        uint32 winCount;
+        uint32 manaCount;
+        uint32 level;
         uint32 readyTime;
     }
 
     Character[] public characters;
 
     mapping(uint256 => address) public characterToOwner;
+    mapping(bytes32 => string) requestToCharacterName;
+    mapping(bytes32 => address) requestToSender;
+    mapping(bytes32 => uint256) requestToTokenId;
 
-    constructor() public ERC721("Gloxis", "GXS") {}
+    /**
+     * Constructor inherits VRFConsumerBase
+     *
+     * Network: Rinkeby
+     * Chainlink VRF Coordinator address: 0xb3dCcb4Cf7a26f6cf6B120Cf5A73875B7BBc655B
+     * LINK token address:                0x01BE23585060835E02B77ef475b0Cc51aA1e0709
+     * Key Hash: 0x2ed0feb3e7fd2022120aa84fab1945545a9f2ffc9076fd6156fa96eaff4c1311
+     */
+    constructor(
+        address _VRFCoordinator,
+        address _linkTokenAddress,
+        bytes32 _keyHash
+    )
+        public
+        VRFConsumerBase(_VRFCoordinator, _linkTokenAddress)
+        ERC721("Gloxis", "GXS")
+    {
+        vrfCoordinator = _VRFCoordinator;
+        keyHash = _keyHash;
+        fee = 0.1 * 10**18; // 0.1 LINK
+    }
 
     modifier onlyOwnerOf(uint256 _characterId) {
         require(
@@ -42,19 +71,37 @@ contract Gloxis is ERC721 {
     /**
      * Requests randomness from a user-provided seed
      */
-    function requestNewRandomCharacter(string memory name) public {
+    function requestNewRandomCharacter(
+        uint256 userProvidedSeed,
+        string memory name
+    ) public returns (bytes32) {
+        require(
+            LINK.balanceOf(address(this)) >= fee,
+            "Not enough LINK - fill contract with faucet"
+        );
+        bytes32 requestId = requestRandomness(keyHash, fee, userProvidedSeed);
+        requestToCharacterName[requestId] = name;
+        requestToSender[requestId] = msg.sender;
+        return requestId;
+    }
+
+    /**
+     * Callback function used by VRF Coordinator
+     */
+    function fulfillRandomness(bytes32 requestId, uint256 randomNumber)
+        internal
+        override
+    {
         uint256 newId = characters.length;
-        // get random from abi
-        uint256 randomNumber = _generateRandomDna(name);
-        uint256 strength = (randomNumber % 100);
+        console.log("> randomNumber:", randomNumber);
         uint256 eyeColor = ((randomNumber % 10000) / 100);
+        console.log("> eyeColor:", eyeColor);
         uint256 hairColor = ((randomNumber % 1000000) / 10000);
         uint256 skincolor = ((randomNumber % 1000000) / 10000);
 
         characters.push(
             Character(
-                strength,
-                name,
+                requestToCharacterName[requestId],
                 eyeColor,
                 hairColor,
                 skincolor,
@@ -65,7 +112,7 @@ contract Gloxis is ERC721 {
             )
         );
         characterToOwner[newId] = msg.sender;
-        _safeMint(msg.sender, newId);
+        _safeMint(requestToSender[requestId], newId);
     }
 
     function _generateRandomDna(string memory _str)
@@ -113,10 +160,10 @@ contract Gloxis is ERC721 {
         require(myCharacter.manaCount >= 1, "You don't have enough mana");
         require(_characterId != _targetId, "You cannot attack yourself");
         Character storage targetCharacter = characters[_targetId];
-        myCharacter.winCount = myCharacter.winCount.add(1);
-        myCharacter.level = myCharacter.level.add(1);
-        myCharacter.manaCount = myCharacter.manaCount.sub(1);
-        targetCharacter.manaCount = targetCharacter.manaCount.add(1);
+        myCharacter.winCount.add(1);
+        myCharacter.level.add(1);
+        myCharacter.manaCount.sub(1);
+        targetCharacter.manaCount.add(1);
         _triggerCooldown(myCharacter);
     }
 }
