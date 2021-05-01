@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity >=0.6.0;
+pragma experimental ABIEncoderV2;
 
-import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@chainlink/contracts/src/v0.6/VRFConsumerBase.sol";
 
@@ -13,22 +13,29 @@ contract Gloxis is ERC721, VRFConsumerBase {
     uint256 public randomResult;
 
     uint256 cooldownTime = 1 days;
-    uint256 dnaDigits = 16;
+    uint256 dnaDigits = 3;
     uint256 dnaModulus = 10**dnaDigits;
 
     using SafeMathChainlink for uint16;
     using SafeMathChainlink for uint32;
     using SafeMathChainlink for uint256;
 
+    struct RGB {
+        uint256 red;
+        uint256 green;
+        uint256 blue;
+    }
+
     struct Character {
         string name;
-        uint256 eyeColor;
+        RGB eyeColorRGB;
         uint256 hairColor;
         uint256 skinColor;
         uint32 winCount;
         uint32 manaCount;
         uint32 level;
         uint32 readyTime;
+        uint256 randomNumber;
     }
 
     Character[] public characters;
@@ -93,22 +100,34 @@ contract Gloxis is ERC721, VRFConsumerBase {
         override
     {
         uint256 newId = characters.length;
-        console.log("> randomNumber:", randomNumber);
-        uint256 eyeColor = ((randomNumber % 10000) / 100);
-        console.log("> eyeColor:", eyeColor);
+        RGB memory eyeColorRGB =
+            RGB(
+                ((randomNumber % dnaModulus) / 64) > 255
+                    ? 255
+                    : (randomNumber % dnaModulus) / 64,
+                ((randomNumber % dnaModulus) / 14) > 255
+                    ? 255
+                    : (randomNumber % dnaModulus) / 14,
+                ((randomNumber % dnaModulus) / 77) > 255
+                    ? 255
+                    : (randomNumber % dnaModulus) / 77
+            );
         uint256 hairColor = ((randomNumber % 1000000) / 10000);
         uint256 skincolor = ((randomNumber % 1000000) / 10000);
 
         characters.push(
             Character(
                 requestToCharacterName[requestId],
-                eyeColor,
+                eyeColorRGB,
                 hairColor,
                 skincolor,
                 0,
                 25,
                 1,
-                uint32(block.timestamp)
+                uint32(block.timestamp),
+                (randomNumber % dnaModulus) > 255
+                    ? 255
+                    : randomNumber % dnaModulus
             )
         );
         characterToOwner[newId] = msg.sender;
