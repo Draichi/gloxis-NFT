@@ -5,8 +5,6 @@ pragma experimental ABIEncoderV2;
 import "hardhat/console.sol";
 
 contract Colorable {
-    constructor() public {}
-
     uint256 dnaDigits = 3;
     uint256 dnaModulus = 10**dnaDigits;
     uint256 randomModifierVariable = 23;
@@ -39,13 +37,6 @@ contract Colorable {
         uint256 green;
         uint256 blue;
     }
-
-    struct Character {
-        string name;
-        ColorPalette colorPalette;
-    }
-
-    Character[] public characters;
 
     function generateRGB(uint256 randomNumber, uint256 randomModifier)
         internal
@@ -152,11 +143,5 @@ contract Colorable {
         );
 
         return colorPalette;
-    }
-
-    function createNew(string memory name) public {
-        ColorPalette memory colorPalette = createColorPalette(123123);
-
-        characters.push(Character(name, colorPalette));
     }
 }
