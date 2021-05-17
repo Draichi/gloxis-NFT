@@ -1,5 +1,12 @@
 {
   "name": "hardhat-project",
+  "scripts": {
+    "node:local": "npx hardhat node",
+    "console:local": "npx hardhat console --network localhost",
+    "compile": "npx hardhat compile",
+    "deploy": "npx hardhat run scripts/deploy-rinkeby.js --network rinkeby",
+    "verify": "npx hardhat verify --network rinkeby --constructor-args arguments.js"
+  },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.0",
     "@nomiclabs/hardhat-etherscan": "^2.1.1",
