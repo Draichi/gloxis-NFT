@@ -13,29 +13,22 @@ contract Gloxis is ERC721, VRFConsumerBase {
     uint256 public randomResult;
 
     uint256 cooldownTime = 1 days;
-    uint256 dnaDigits = 3;
-    uint256 dnaModulus = 10**dnaDigits;
+
+    uint256 levelDigits = 1;
+    uint256 manaCountDigits = 2;
+    uint256 levelModulus = 10**levelDigits;
+    uint256 manaCountModulus = 10**manaCountDigits;
 
     using SafeMathChainlink for uint16;
     using SafeMathChainlink for uint32;
     using SafeMathChainlink for uint256;
 
-    struct RGB {
-        uint256 red;
-        uint256 green;
-        uint256 blue;
-    }
-
     struct Character {
         string name;
-        RGB eyeColorRGB;
-        uint256 hairColor;
-        uint256 skinColor;
-        uint32 winCount;
-        uint32 manaCount;
         uint32 level;
-        uint32 readyTime;
-        uint256 randomNumber;
+        uint32 manaCount;
+        uint256 readyTime;
+        uint256 dna;
     }
 
     Character[] public characters;
@@ -100,47 +93,20 @@ contract Gloxis is ERC721, VRFConsumerBase {
         override
     {
         uint256 newId = characters.length;
-        RGB memory eyeColorRGB =
-            RGB(
-                ((randomNumber % dnaModulus) / 64) > 255
-                    ? 255
-                    : (randomNumber % dnaModulus) / 64,
-                ((randomNumber % dnaModulus) / 14) > 255
-                    ? 255
-                    : (randomNumber % dnaModulus) / 14,
-                ((randomNumber % dnaModulus) / 77) > 255
-                    ? 255
-                    : (randomNumber % dnaModulus) / 77
-            );
-        uint256 hairColor = ((randomNumber % 1000000) / 10000);
-        uint256 skincolor = ((randomNumber % 1000000) / 10000);
+        uint32 randomLevel = uint32(randomNumber % levelModulus);
+        uint32 randomManaCount = uint32(randomNumber % manaCountModulus);
 
         characters.push(
             Character(
                 requestToCharacterName[requestId],
-                eyeColorRGB,
-                hairColor,
-                skincolor,
-                0,
-                25,
-                1,
+                randomLevel,
+                randomManaCount,
                 uint32(block.timestamp),
-                (randomNumber % dnaModulus) > 255
-                    ? 255
-                    : randomNumber % dnaModulus
+                randomNumber
             )
         );
         characterToOwner[newId] = msg.sender;
         _safeMint(requestToSender[requestId], newId);
-    }
-
-    function _generateRandomDna(string memory _str)
-        private
-        view
-        returns (uint256)
-    {
-        uint256 rand = uint256(keccak256(abi.encodePacked(_str)));
-        return rand % dnaModulus;
     }
 
     function getCharactersCount() public view returns (uint256 count) {
@@ -177,9 +143,8 @@ contract Gloxis is ERC721, VRFConsumerBase {
             "You have to wait your 1 day to share your mana"
         );
         require(myCharacter.manaCount >= 1, "You don't have enough mana");
-        require(_characterId != _targetId, "You cannot attack yourself");
+        require(_characterId != _targetId, "You cannot interact with yourself");
         Character storage targetCharacter = characters[_targetId];
-        myCharacter.winCount.add(1);
         myCharacter.level.add(1);
         myCharacter.manaCount.sub(1);
         targetCharacter.manaCount.add(1);
