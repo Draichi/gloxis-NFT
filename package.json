@@ -1,15 +1,15 @@
 {
   "name": "gloxis",
   "private": true,
-  "workspaces": ["web-app"],
+  "workspaces": ["frontend"],
   "scripts": {
     "node:local": "npx hardhat node",
     "console:local": "npx hardhat console --network localhost",
     "compile": "npx hardhat compile",
     "deploy": "npx hardhat run scripts/deploy-rinkeby.js --network rinkeby",
     "verify": "npx hardhat verify --network rinkeby --constructor-args arguments.js",
-    "web-app:start": "yarn workspace web-app start",
-    "web-app:build": "yarn workspace web-app build"
+    "frontend:start": "yarn workspace frontend start",
+    "frontend:build": "yarn workspace frontend build"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.0",
@@ -22,7 +22,7 @@
     "hardhat": "^2.1.2"
   },
   "dependencies": {
-    "web-app": "0.1.0",
+    "frontend": "0.1.0",
     "@chainlink/contracts": "^0.1.7",
     "@metamask/detect-provider": "^1.2.0",
     "@openzeppelin/contracts": "3.4.1"
