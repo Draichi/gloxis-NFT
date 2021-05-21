@@ -1,6 +1,6 @@
 import logo from "./logo.svg";
 import "./App.css";
-import { BigNumber, BigNumberish } from "ethers";
+import { BigNumber } from "ethers";
 import getBlockchain from "./ethereum";
 import { useState, useEffect } from "react";
 
@@ -26,14 +26,12 @@ const generateRGB = (dna) => {
 };
 
 function App() {
-  const [gloxis, setGloxis] = useState(undefined);
   const [data, setData] = useState(undefined);
 
   useEffect(() => {
     const init = async () => {
       const { gloxis } = await getBlockchain();
       const data = await gloxis.characters(0);
-      setGloxis(gloxis);
       setData(data);
       let dna = BigNumber.from(data.dna).toString();
       const colorPalette = generateRGB(dna);
@@ -51,12 +49,6 @@ function App() {
         <p>
           Edit <code>src/App.js</code> and save to reload.
         </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        ></a>
 
         {data && <h1>{data.name}</h1>}
       </header>
