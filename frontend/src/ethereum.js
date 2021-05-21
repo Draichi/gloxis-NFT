@@ -7,7 +7,6 @@ const getBlockchain = () =>
     let provider = await detectEthereumProvider();
     if (provider) {
       await provider.request({ method: "eth_requestAccounts" });
-      const networkId = await provider.request({ method: "net_version" });
       provider = new ethers.providers.Web3Provider(provider);
       const signer = provider.getSigner();
       const gloxis = new Contract(
