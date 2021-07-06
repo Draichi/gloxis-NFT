@@ -19,6 +19,19 @@ contract Gloxis is ERC721, VRFConsumerBase {
     uint256 levelModulus = 10**levelDigits;
     uint256 manaCountModulus = 10**manaCountDigits;
 
+    string[] personalityTypes = [
+        "angry",
+        "crybaby",
+        "smiley",
+        "shy",
+        "lazy",
+        "angry",
+        "crybaby",
+        "smiley",
+        "shy",
+        "lazy"
+    ];
+
     using SafeMathChainlink for uint16;
     using SafeMathChainlink for uint32;
     using SafeMathChainlink for uint256;
@@ -29,6 +42,7 @@ contract Gloxis is ERC721, VRFConsumerBase {
         uint32 manaCount;
         uint256 readyTime;
         uint256 dna;
+        string personality;
     }
 
     Character[] public characters;
@@ -99,10 +113,11 @@ contract Gloxis is ERC721, VRFConsumerBase {
         characters.push(
             Character(
                 requestToCharacterName[requestId],
-                randomLevel,
+                randomLevel + 1,
                 randomManaCount,
                 uint32(block.timestamp),
-                randomNumber
+                randomNumber,
+                personalityTypes[randomLevel]
             )
         );
         characterToOwner[newId] = msg.sender;
